@@ -8,9 +8,9 @@
 \n<!DOCTYPE html>
 
 <html lang="en"><head>
-<link rel="icon" href="./icons/habi-official-logo.jpg" type="image/jpeg" sizes="192x192" />
+<link rel="icon" href="./icons/favicon-32.png" type="image/png" sizes="32x32" />
 
-<link rel="apple-touch-icon" href="./icons/habi-official-logo.jpg" />
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <meta content="#243746" name="theme-color"/>
@@ -3464,6 +3464,26 @@ document.addEventListener('click', async function(event) {
     button.innerHTML = original;
   }
 }, true);
+</script>
+
+
+<style id="habi-install-ui">
+#habiInstallBar{position:fixed;right:16px;bottom:18px;z-index:10050;max-width:min(360px,calc(100vw - 32px));background:#fff;color:#18392e;border:1px solid #cbd8ce;border-radius:16px;padding:14px;box-shadow:0 8px 32px #102a4330;font:14px Arial,sans-serif}
+#habiInstallBar[hidden]{display:none}#habiInstallBar strong{display:block;margin-bottom:5px}#habiInstallBar p{font-size:12px;line-height:1.45;margin:0 0 10px}#habiInstallBar button{border:0;border-radius:9px;padding:9px 12px;margin:3px 5px 0 0;font-weight:700;cursor:pointer;background:#174c3c;color:white}#habiInstallBar button.secondary{background:#e8efe9;color:#174c3c}
+</style>
+<div id="habiInstallBar" hidden role="region" aria-label="Install HABI app">
+<strong>Install HABI on this device</strong><p id="habiInstallHelp">Add HABI to your home screen for an app-like experience.</p>
+<button id="habiInstallNow" type="button">Install app</button><button id="habiInstallClose" class="secondary" type="button">Not now</button>
+</div>
+<script id="habi-pwa-install">
+(()=>{let deferred=null;const bar=document.getElementById('habiInstallBar'),help=document.getElementById('habiInstallHelp'),install=document.getElementById('habiInstallNow'),close=document.getElementById('habiInstallClose');if(!bar||!install||!close)return;
+const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+if(standalone)return;
+if(ios){help.textContent='Sa iPhone/iPad: buksan ang Share button sa Safari, piliin ang “Add to Home Screen”, pagkatapos ay Add.';install.textContent='How to install';bar.hidden=false;install.addEventListener('click',()=>{help.textContent='Sa Safari, tap ang Share icon (square na may arrow pataas), piliin ang Add to Home Screen, at tap Add.';});}
+else{window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;bar.hidden=false;});install.addEventListener('click',async()=>{if(!deferred){help.textContent='Sa Chrome/Edge, buksan ang menu (⋮ o …) at piliin ang Install app o Add to Home Screen.';return;}deferred.prompt();await deferred.userChoice;deferred=null;bar.hidden=true;});}
+close.addEventListener('click',()=>bar.hidden=true);window.addEventListener('appinstalled',()=>{bar.hidden=true;deferred=null;});
+})();
 </script>
 
 </body></html>
