@@ -30,7 +30,7 @@
       <div class="eyebrow">Authorized personnel only</div>
       <h1>Admin Sign In</h1>
       <p>Mag-sign in gamit ang awtorisadong HABI administrator account. Walang public registration sa Admin App.</p>
-      <form id="loginForm" onsubmit="return false;">
+      <form id="loginForm" onsubmit="event.preventDefault(); if (window.habiAdminLogin) { window.habiAdminLogin(); } else { document.getElementById('loginNote').textContent = 'Hindi pa naglo-load ang secure login. I-refresh ang page at subukan muli.'; }">
         <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="username" required placeholder="admin@example.com"></div>
         <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Enter your password"></div>
         <button class="primary wide" id="loginBtn" type="submit">Sign in to Admin</button>
@@ -101,13 +101,20 @@ const gate = $('authGate'), shell = $('app'), note = $('loginNote');
 function showNote(message, type=''){ note.textContent = message; note.className = 'note ' + type; }
 function friendlyError(error){
   const map = {
-    'auth/invalid-credential':'Mali ang email o password.',
-    'auth/user-disabled':'Naka-disable ang account na ito.',
-    'auth/too-many-requests':'Masyadong maraming pagtatangka. Subukan muli mamaya.',
-    'auth/network-request-failed':'May problema sa internet connection.',
-    'permission-denied':'Hindi mabasa ang admin record. Suriin ang Firestore Rules at admin document.'
+    'auth/invalid-credential':'MALI ANG EMAIL O PASSWORD. I-check ang email at password.',
+    'auth/invalid-login-credentials':'MALI ANG EMAIL O PASSWORD. I-check ang email at password.',
+    'auth/wrong-password':'MALI ANG PASSWORD. Subukan muli.',
+    'auth/user-not-found':'WALANG ACCOUNT na nakarehistro sa email na ito.',
+    'auth/invalid-email':'MALI ANG FORMAT NG EMAIL ADDRESS.',
+    'auth/user-disabled':'DISABLED ang account na ito. Makipag-ugnayan sa project administrator.',
+    'auth/too-many-requests':'Pansamantalang na-block ang sign-in dahil maraming attempts. Subukan muli mamaya.',
+    'auth/network-request-failed':'Walang maayos na koneksyon sa internet. I-check ang connection.',
+    'auth/operation-not-allowed':'Hindi naka-enable ang Email/Password sign-in sa Firebase Authentication.',
+    'auth/unauthorized-domain':'Hindi authorized ang website domain sa Firebase Authentication settings.',
+    'permission-denied':'NAKA-BLOCK ang Firestore access. Suriin ang Firestore Rules.',
+    'unavailable':'Hindi maabot ang Firebase. Subukan muli kapag may internet.'
   };
-  return map[error.code] || error.message || 'Hindi nakumpleto ang request.';
+  return map[error.code] || ('Hindi makapag-sign in: ' + (error.message || error.code || 'Unknown error') + ' [' + (error.code || 'no-code') + ']');
 }
 async function verifyAdmin(user){
   const ref = doc(db, 'admins', user.uid);
@@ -122,7 +129,7 @@ async function enterAdmin(user){
     if (!allowed) {
       await signOut(auth);
       gate.style.display = 'grid';
-      showNote('Walang Admin access ang account na ito. Tanging active admin UID na may role = admin ang pinapayagan.', 'error');
+      showNote('NAKA-LOGIN ANG EMAIL/PASSWORD, PERO WALANG ADMIN ACCESS. Kailangan ng Firestore admins document na may ID = Firebase UID, role = admin, at active = true.', 'error');
       return;
     }
     verifiedAdminUser=user;
@@ -137,27 +144,34 @@ async function enterAdmin(user){
     await signOut(auth).catch(()=>{});
     gate.style.display = 'grid';
     shell.style.display = 'none';
-    showNote('Hindi ma-verify ang Admin access: ' + friendlyError(error), 'error');
+    showNote('HINDI MA-VERIFY ANG ADMIN ACCESS: ' + friendlyError(error), 'error');
   }
 }
-$('loginForm').addEventListener('submit', async e => {
-  e.preventDefault();
+window.habiAdminLogin = async function(){
   const btn = $('loginBtn');
-  btn.disabled = true; btn.textContent = 'Verifying…'; showNote('Sinusuri ang Firebase account at Admin authorization…');
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  if (!email || !password) { showNote('Ilagay ang parehong email at password.', 'error'); return; }
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  showNote('Sinusuri ang email at password sa Firebase…');
   try {
     try {
       await setPersistence(auth, browserLocalPersistence);
     } catch (persistenceError) {
-      // Some browser privacy/storage settings block persistent storage.
-      // Continue with Firebase's available persistence instead of aborting login.
       console.warn('HABI Admin persistence fallback:', persistenceError);
-      showNote('Limitado ang browser storage; sinusubukan pa rin ang secure sign-in…');
+      showNote('Hindi available ang browser storage; itutuloy ang sign-in…');
     }
-    await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
-    // onAuthStateChanged is the single source of truth for admin verification.
-  } catch (error) { showNote(friendlyError(error), 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Sign in to Admin'; }
-});
+    await signInWithEmailAndPassword(auth, email, password);
+    showNote('Tama ang login details. Vine-verify naman ang Admin access…');
+  } catch (error) {
+    console.error('HABI Admin sign-in failed:', error);
+    showNote(friendlyError(error), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in to Admin';
+  }
+};
 onAuthStateChanged(auth, user => {
   if (user) enterAdmin(user);
   else { verifiedAdminUser=null;adminSessionLogWritten=false;shell.style.display = 'none'; gate.style.display = 'grid'; }

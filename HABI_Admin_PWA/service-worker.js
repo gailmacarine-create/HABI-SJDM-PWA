@@ -1,4 +1,4 @@
-const CACHE_NAME = "habi_admin_pwa-logo-v4";
+const CACHE_NAME = "habi_admin_pwa-login-diagnostics-v5";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/favicon.ico"];
 
 self.addEventListener("install", event => {
