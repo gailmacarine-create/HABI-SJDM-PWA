@@ -1,4 +1,4 @@
-const CACHE_NAME = "habi_admin_pwa-dashboard-metrics-v7";
+const CACHE_NAME = "habi_admin_pwa-dashboard-counts-v8";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/favicon.ico"];
 
 self.addEventListener("install", event => {
