@@ -1,5 +1,5 @@
-const CACHE_NAME = "habi_user_pwa-profile-uploads-v5";
-const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/favicon.ico"];
+const CACHE_NAME = "habi_user_pwa-official-logo-v6";
+const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/favicon.ico", "./icons/habi-official-logo.jpg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
