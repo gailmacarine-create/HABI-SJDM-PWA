@@ -3,6 +3,12 @@
 <link rel="icon" href="./icons/favicon-32.png" type="image/png" sizes="32x32" />
 
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<script id="habi-ipad-icon-refresh">
+// Refresh only the iPad Home Screen icon; preserve existing iPhone/Android behavior.
+if (/iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+  document.querySelector('link[rel="apple-touch-icon"]').href = './icons/apple-touch-icon.png?ipad-logo=20261119';
+}
+</script>
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <meta content="#243746" name="theme-color"/>
