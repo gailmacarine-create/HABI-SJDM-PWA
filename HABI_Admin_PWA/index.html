@@ -202,25 +202,17 @@ async function renderAdminActivityLogs(){
 }
 async function renderDashboardMetrics(){
  const setMetric=(id,noteId,value,note)=>{const el=$(id),sub=$(noteId);if(el)el.textContent=value;if(sub)sub.textContent=note;};
- for(const [id,noteId] of [['metricUsers','metricUsersNote'],['metricCommunity','metricCommunityNote'],['metricPending','metricPendingNote'],['metricFeedback','metricFeedbackNote']])setMetric(id,noteId,'Loading…','Reading Firestore…');
- try{
-  const [profilesSnap,reportsSnap]=await Promise.all([
-   getDocs(collection(db,'userProfiles')),
-   getDocs(collection(db,'habiReports'))
-  ]);
-  const reports=reportsSnap.docs.map(d=>d.data());
-  const community=reports.filter(r=>r.module==='community-reports').length;
-  const pending=reports.filter(r=>/pending|submitted/i.test(String(r.status||'Pending Review'))).length;
-  const feedback=reports.filter(r=>r.module==='habi-feedback').length;
-  setMetric('metricUsers','metricUsersNote',profilesSnap.size.toLocaleString(),'Saved user profiles · userProfiles');
-  setMetric('metricCommunity','metricCommunityNote',community.toLocaleString(),'Community report records · habiReports');
-  setMetric('metricPending','metricPendingNote',pending.toLocaleString(),'Pending review across all HABI modules');
-  setMetric('metricFeedback','metricFeedbackNote',feedback.toLocaleString(),'Feedback records · habiReports');
- }catch(error){
-  console.error('HABI dashboard metrics failed:',error);
-  const message=error.code==='permission-denied'?'No Firestore read permission':'Could not load';
-  for(const [id,noteId] of [['metricUsers','metricUsersNote'],['metricCommunity','metricCommunityNote'],['metricPending','metricPendingNote'],['metricFeedback','metricFeedbackNote']])setMetric(id,noteId,'—',message+' · '+(error.code||'check connection'));
- }
+ const loading=[['metricUsers','metricUsersNote'],['metricCommunity','metricCommunityNote'],['metricPending','metricPendingNote'],['metricFeedback','metricFeedbackNote']];
+ for(const [id,noteId] of loading)setMetric(id,noteId,'Loading…','Connecting to Firestore…');
+ const readCount=async(path)=>{const snap=await getDocs(collection(db,path));return snap.size;};
+ const readReports=async()=>{const snap=await getDocs(collection(db,'habiReports'));return snap.docs.map(d=>d.data());};
+ const tasks=[
+  (async()=>{try{const count=await readCount('users');setMetric('metricUsers','metricUsersNote',count.toLocaleString(),'Registered accounts · users');}catch(e){console.error('Dashboard users count:',e);setMetric('metricUsers','metricUsersNote','ERROR',e.code==='permission-denied'?'Firestore denied read of users':(e.code||e.message||'Unable to read users'));}})(),
+  (async()=>{try{const reports=await readReports();const count=reports.filter(r=>r.module==='community-reports').length;setMetric('metricCommunity','metricCommunityNote',count.toLocaleString(),'Community report records · habiReports');}catch(e){console.error('Dashboard community count:',e);setMetric('metricCommunity','metricCommunityNote','ERROR',e.code==='permission-denied'?'Firestore denied read of habiReports':(e.code||e.message||'Unable to read reports'));}})(),
+  (async()=>{try{const reports=await readReports();const count=reports.filter(r=>/pending|submitted/i.test(String(r.status||'Pending Review'))).length;setMetric('metricPending','metricPendingNote',count.toLocaleString(),'Pending review across all HABI modules');}catch(e){console.error('Dashboard pending count:',e);setMetric('metricPending','metricPendingNote','ERROR',e.code==='permission-denied'?'Firestore denied read of habiReports':(e.code||e.message||'Unable to read reports'));}})(),
+  (async()=>{try{const reports=await readReports();const count=reports.filter(r=>r.module==='habi-feedback').length;setMetric('metricFeedback','metricFeedbackNote',count.toLocaleString(),'Feedback records · habiReports');}catch(e){console.error('Dashboard feedback count:',e);setMetric('metricFeedback','metricFeedbackNote','ERROR',e.code==='permission-denied'?'Firestore denied read of habiReports':(e.code||e.message||'Unable to read reports'));}})()
+ ];
+ await Promise.all(tasks);
 }
 async function renderRecentAdminActivity(){
  const host=$('recentAdminActivity');if(!host)return;
