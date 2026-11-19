@@ -144,8 +144,9 @@ $('loginForm').addEventListener('submit', async e => {
   const btn = $('loginBtn');
   btn.disabled = true; btn.textContent = 'Verifying…'; showNote('Sinusuri ang Firebase account at Admin authorization…');
   try {
-    const credential = await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
-    await enterAdmin(credential.user);
+    await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
+    // onAuthStateChanged is the single source of truth for admin verification.
+    // Calling enterAdmin here as well caused duplicate concurrent checks.
   } catch (error) { showNote(friendlyError(error), 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Sign in to Admin'; }
 });
