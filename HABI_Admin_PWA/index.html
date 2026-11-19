@@ -30,7 +30,7 @@
       <div class="eyebrow">Authorized personnel only</div>
       <h1>Admin Sign In</h1>
       <p>Mag-sign in gamit ang awtorisadong HABI administrator account. Walang public registration sa Admin App.</p>
-      <form id="loginForm">
+      <form id="loginForm" onsubmit="return false;">
         <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="username" required placeholder="admin@example.com"></div>
         <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Enter your password"></div>
         <button class="primary wide" id="loginBtn" type="submit">Sign in to Admin</button>
@@ -93,7 +93,8 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 let verifiedAdminUser = null;
 let adminSessionLogWritten = false;
-await setPersistence(auth, browserLocalPersistence);
+// Persistence is configured inside the submit handler so a storage/persistence
+// failure cannot abort this module before the login form handler is attached.
 
 const $ = id => document.getElementById(id);
 const gate = $('authGate'), shell = $('app'), note = $('loginNote');
@@ -144,9 +145,16 @@ $('loginForm').addEventListener('submit', async e => {
   const btn = $('loginBtn');
   btn.disabled = true; btn.textContent = 'Verifying…'; showNote('Sinusuri ang Firebase account at Admin authorization…');
   try {
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+    } catch (persistenceError) {
+      // Some browser privacy/storage settings block persistent storage.
+      // Continue with Firebase's available persistence instead of aborting login.
+      console.warn('HABI Admin persistence fallback:', persistenceError);
+      showNote('Limitado ang browser storage; sinusubukan pa rin ang secure sign-in…');
+    }
     await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
     // onAuthStateChanged is the single source of truth for admin verification.
-    // Calling enterAdmin here as well caused duplicate concurrent checks.
   } catch (error) { showNote(friendlyError(error), 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Sign in to Admin'; }
 });
