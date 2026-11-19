@@ -81,7 +81,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, getDocs, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, getDocs, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDOGhIgxLw_ZgewC6tpYqKzsgL0v3xHQTY",
@@ -144,6 +144,7 @@ async function enterAdmin(user){
     $('topEmail').textContent = user.email || 'Administrator';
     $('avatar').textContent = (user.email || 'A').charAt(0).toUpperCase();
     renderPage('overview');
+    startHabiIncomingReports();
   } catch (error) {
     await signOut(auth).catch(()=>{});
     gate.style.display = 'grid';
@@ -178,12 +179,36 @@ window.habiAdminLogin = async function(){
 };
 onAuthStateChanged(auth, user => {
   if (user) enterAdmin(user);
-  else { verifiedAdminUser=null;adminSessionLogWritten=false;shell.style.display = 'none'; gate.style.display = 'grid'; }
+  else { if(habiReportUnsubscribe){habiReportUnsubscribe();habiReportUnsubscribe=null;}habiLastReportCount=null;verifiedAdminUser=null;adminSessionLogWritten=false;shell.style.display = 'none'; gate.style.display = 'grid'; }
 });
 $('logoutBtn').addEventListener('click', async()=>{await writeAdminActivity('Admin signed out','');verifiedAdminUser=null;adminSessionLogWritten=false;await signOut(auth);});
 $('menuBtn').addEventListener('click',()=>$('sidebar').classList.toggle('open'));
 
 
+let habiReportUnsubscribe=null;
+let habiLastReportCount=null;
+function startHabiIncomingReports(){
+  if(habiReportUnsubscribe){habiReportUnsubscribe();habiReportUnsubscribe=null;}
+  habiReportUnsubscribe=onSnapshot(collection(db,'habiReports'),snapshot=>{
+    const previous=habiLastReportCount;
+    habiLastReportCount=snapshot.size;
+    habiCachedReports=snapshot.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.createdAtClient||'').localeCompare(String(a.createdAtClient||'')));
+    const active=document.querySelector('[data-page].active')?.dataset.page||'overview';
+    if(active==='overview')renderDashboardMetrics();
+    else if(moduleKeys.includes(active)||active==='community'||active==='feedback')renderLiveReports(active);
+    if(previous!==null&&snapshot.size>previous){
+      const notice=document.getElementById('habiIncomingReportNotice')||document.createElement('div');
+      notice.id='habiIncomingReportNotice';notice.setAttribute('role','status');
+      notice.style.cssText='position:fixed;right:16px;bottom:16px;z-index:99999;background:#123b33;color:white;padding:14px 18px;border-radius:12px;box-shadow:0 8px 25px #0004;font:14px Arial,sans-serif';
+      notice.textContent='New HABI User report received ('+snapshot.size+' total). Open Community Reports.';
+      document.body.appendChild(notice);
+    }
+  },error=>{
+    console.error('HABI Admin report inbox subscription:',error);
+    const host=$('content');
+    if(host&&document.querySelector('[data-page].active')?.dataset.page==='community')host.innerHTML='<div class="panel"><h2>Cannot receive User reports</h2><p>'+safeHtml(error.code||error.message)+'</p><p>Check Firebase Firestore rules for admin read access to habiReports.</p></div>';
+  });
+}
 let habiCachedReports=[];
 async function loadHabiReports(){const snap=await getDocs(collection(db,'habiReports'));habiCachedReports=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.createdAtClient||'').localeCompare(String(a.createdAtClient||'')));return habiCachedReports;}
 function safeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
