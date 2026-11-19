@@ -1,4 +1,4 @@
-const CACHE_NAME = "habi_user_pwa-install-v7";
+const CACHE_NAME = "habi_user_pwa-install-v8";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/favicon.ico", "./icons/habi-official-logo.jpg"];
 
 self.addEventListener("install", event => {
@@ -8,7 +8,7 @@ self.addEventListener("install", event => {
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("habi_user_") && key !== CACHE_NAME).map(key => caches.delete(key))))
   );
   self.clients.claim();
 });
